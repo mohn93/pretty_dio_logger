@@ -110,7 +110,7 @@ class PrettyDioLogger extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    if (response) {
+    if (this.response) {
       _printResponseHeader(response);
     }
     if (responseHeader) {
