@@ -12,6 +12,9 @@ class PrettyDioLogger extends Interceptor {
   /// Print request data [Options.data]
   final bool requestBody;
 
+  /// Print response [Options]
+  final bool response;
+
   /// Print [Response.data]
   final bool responseBody;
 
@@ -38,16 +41,16 @@ class PrettyDioLogger extends Interceptor {
   /// you can also write log in a file.
   void Function(Object object) logPrint;
 
-  PrettyDioLogger(
-      {this.request = true,
-      this.requestHeader = false,
-      this.requestBody = false,
-      this.responseHeader = false,
-      this.responseBody = true,
-      this.error = true,
-      this.maxWidth = 90,
-      this.compact = true,
-      this.logPrint = print});
+  PrettyDioLogger({this.request = true,
+    this.requestHeader = false,
+    this.requestBody = false,
+    this.response = true,
+    this.responseHeader = false,
+    this.responseBody = true,
+    this.error = true,
+    this.maxWidth = 90,
+    this.compact = true,
+    this.logPrint = print});
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -71,9 +74,8 @@ class PrettyDioLogger extends Interceptor {
       if (data != null) {
         if (data is Map) _printMapAsTable(options.data as Map?, header: 'Body');
         if (data is FormData) {
-          final formDataMap = <String, dynamic>{}
-            ..addEntries(data.fields)
-            ..addEntries(data.files);
+          final formDataMap = <String, dynamic>{}..addEntries(
+              data.fields)..addEntries(data.files);
           _printMapAsTable(formDataMap, header: 'Form data | ${data.boundary}');
         } else {
           _printBlock(data.toString());
@@ -90,7 +92,8 @@ class PrettyDioLogger extends Interceptor {
         final uri = err.response?.requestOptions.uri;
         _printBoxed(
             header:
-                'DioError ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage}',
+            'DioError ║ Status: ${err.response?.statusCode} ${err.response
+                ?.statusMessage}',
             text: uri.toString());
         if (err.response != null && err.response?.data != null) {
           logPrint('╔ ${err.type.toString()}');
@@ -107,7 +110,9 @@ class PrettyDioLogger extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    _printResponseHeader(response);
+    if (response) {
+      _printResponseHeader(response);
+    }
     if (responseHeader) {
       final responseHeaders = <String, String>{};
       response.headers
@@ -151,7 +156,8 @@ class PrettyDioLogger extends Interceptor {
     final method = response.requestOptions.method;
     _printBoxed(
         header:
-            'Response ║ $method ║ Status: ${response.statusCode} ${response.statusMessage}',
+        'Response ║ $method ║ Status: ${response.statusCode} ${response
+            .statusMessage}',
         text: uri.toString());
   }
 
@@ -187,8 +193,7 @@ class PrettyDioLogger extends Interceptor {
 
   String _indent([int tabCount = initialTab]) => tabStep * tabCount;
 
-  void _printPrettyMap(
-    Map data, {
+  void _printPrettyMap(Map data, {
     int tabs = initialTab,
     bool isListItem = false,
     bool isLast = false,
@@ -229,7 +234,8 @@ class PrettyDioLogger extends Interceptor {
           final lines = (msg.length / linWidth).ceil();
           for (var i = 0; i < lines; ++i) {
             logPrint(
-                '║${_indent(_tabs)} ${msg.substring(i * linWidth, math.min<int>(i * linWidth + linWidth, msg.length))}');
+                '║${_indent(_tabs)} ${msg.substring(i * linWidth,
+                    math.min<int>(i * linWidth + linWidth, msg.length))}');
           }
         } else {
           logPrint('║${_indent(_tabs)} $key: $msg${!isLast ? ',' : ''}');
@@ -257,20 +263,24 @@ class PrettyDioLogger extends Interceptor {
 
   bool _canFlattenMap(Map map) {
     return map.values
-            .where((dynamic val) => val is Map || val is List)
-            .isEmpty &&
-        map.toString().length < maxWidth;
+        .where((dynamic val) => val is Map || val is List)
+        .isEmpty &&
+        map
+            .toString()
+            .length < maxWidth;
   }
 
   bool _canFlattenList(List list) {
-    return list.length < 10 && list.toString().length < maxWidth;
+    return list.length < 10 && list
+        .toString()
+        .length < maxWidth;
   }
 
   void _printMapAsTable(Map? map, {String? header}) {
     if (map == null || map.isEmpty) return;
     logPrint('╔ $header ');
     map.forEach(
-        (dynamic key, dynamic value) => _printKV(key.toString(), value));
+            (dynamic key, dynamic value) => _printKV(key.toString(), value));
     _printLine('╚');
   }
 }
